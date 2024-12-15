@@ -5,7 +5,7 @@ import { addProduct, deleteProduct, getAllProducts, updateProduct } from "../con
 const app = express();
 
 app.post('/add-product', verifyToken, addProduct  );
-app.patch('update-product/:productId', verifyToken, updateProduct);
+app.patch('/update-product/:productId', verifyToken, updateProduct);
 app.delete('/delete-product/:productId', verifyToken, deleteProduct);
 app.get('/all-products', verifyToken, getAllProducts);
 

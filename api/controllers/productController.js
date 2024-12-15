@@ -1,6 +1,7 @@
 // controllers/productController.js
 import Product from '../models/product.js'
 import { errorHandler } from '../utils/index.js';
+import { isValidObjectId } from "mongoose";
 
 
 export const addProduct = async (req, res, next) => {
@@ -39,21 +40,26 @@ export const addProduct = async (req, res, next) => {
 
 export const deleteProduct = async (req, res, next) => {
   try {
-    const { productId } = req.params;
+    const userId = req.user.id; // Assuming the user ID is in the request object
+    const { productId } = req.params; // Get the product ID from the URL parameters
 
     // Validate the product ID
     if (!productId || !isValidObjectId(productId)) {
       return next(
         errorHandler(
           400,
-          productId ? "Product id is invalid" : "Product id is required"
+          productId ? "Product ID is invalid" : "Product ID is required"
         )
       );
     }
 
-    // Find and delete the product
-    const deletedProduct = await Product.findByIdAndDelete(productId);
+    // Find and delete the product by its ID and userId (for authorization)
+    const deletedProduct = await Product.findOneAndDelete({
+      _id: productId,
+      userId, // Ensure the product belongs to the logged-in user
+    });
 
+    // If no product is found or not accessible by the user, return an error
     if (!deletedProduct) {
       return next(
         errorHandler(
@@ -64,14 +70,16 @@ export const deleteProduct = async (req, res, next) => {
     }
 
     // Return success response
-    return res
-      .status(200)
-      .json({ success: true, message: "Product deleted successfully" });
+    return res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+    });
   } catch (error) {
-    console.error("Error deleting product", error);
+    console.error("Error deleting product:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 export const updateProduct = async (req, res, next) => {
   try {
@@ -147,4 +155,4 @@ export const getAllProducts = async (req, res, next) => {
 
 
 
-module.exports = { addProduct, deleteProduct, updateProduct,getAllProducts };
+export default { addProduct, deleteProduct, updateProduct,getAllProducts };

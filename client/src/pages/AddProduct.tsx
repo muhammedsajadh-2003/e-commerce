@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/@/components/ui/form"
-import { toast } from "@/@/hooks/use-toast"
 
 // Updated schema to match backend requirements
 const formSchema = z.object({
@@ -39,7 +38,11 @@ interface Product {
 
 export default function AddProductPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>([
+    // Mock products data for demo
+    { _id: '1', title: 'Product 1', description: 'Description of product 1', price: '10.00', size: 'M', color: 'Red', image: 'https://via.placeholder.com/150' },
+    { _id: '2', title: 'Product 2', description: 'Description of product 2', price: '20.00', size: 'L', color: 'Blue', image: 'https://via.placeholder.com/150' }
+  ])
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -53,36 +56,6 @@ export default function AddProductPage() {
     },
   })
 
-  // Fetch products when component mounts
-  useEffect(() => {
-    fetchProducts()
-  }, [])
-
-  // Fetch all products
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/product/all-products')
-      const data = await response.json()
-
-      if (data.success) {
-        setProducts(data.products)
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to fetch products",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error fetching products", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch products.",
-        variant: "destructive",
-      })
-    }
-  }
-
   // Handle form submission (add/update product)
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const newProduct: Product = {
@@ -90,59 +63,22 @@ export default function AddProductPage() {
       image: imagePreview || "https://via.placeholder.com/150",
     }
 
-      
-      const method = editingProduct && editingProduct._id ? 'PATCH' : 'POST'
-
-      const response = await fetch(`/api/product/edit-product/${productId}`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newProduct),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        if (editingProduct && editingProduct._id) {
-          // Update existing product
-          setProducts((prev) =>
-            prev.map((product) =>
-              product._id === editingProduct._id ? data.updatedProduct : product
-            )
-          )
-          setEditingProduct(null)
-          toast({
-            title: "Product updated",
-            description: "The product has been successfully updated.",
-          })
-        } else {
-          // Add new product
-          setProducts((prev) => [...prev, data.product])
-          toast({
-            title: "Product added",
-            description: "The product has been successfully added.",
-          })
-        }
-        
-        // Reset form
-        setImagePreview(null)
-        form.reset()
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to submit product",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error submitting product", error)
-      toast({
-        title: "Error",
-        description: "Failed to submit product.",
-        variant: "destructive",
-      })
+    if (editingProduct && editingProduct._id) {
+      // Update existing product
+      setProducts((prev) =>
+        prev.map((product) =>
+          product._id === editingProduct._id ? { ...product, ...newProduct } : product
+        )
+      )
+      setEditingProduct(null)
+    } else {
+      // Add new product
+      setProducts((prev) => [...prev, { ...newProduct, _id: String(prev.length + 1) }])
     }
+
+    // Reset form and image preview
+    setImagePreview(null)
+    form.reset()
   }
 
   // Handle image upload
@@ -154,11 +90,7 @@ export default function AddProductPage() {
         setImagePreview(reader.result as string)
       }
       reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read the image file.",
-          variant: "destructive",
-        })
+        console.error("Failed to read the image file.")
       }
       reader.readAsDataURL(file)
     }
@@ -176,36 +108,8 @@ export default function AddProductPage() {
   }
 
   // Delete a product
-  const handleDeleteProduct = async (productId: string) => {
-    try {
-      const response = await fetch(`/api/product/${productId}`, {
-        method: 'DELETE',
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setProducts((prev) => prev.filter((product) => product._id !== productId))
-        toast({
-          title: "Product deleted",
-          description: "The product has been successfully deleted.",
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to delete product",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error deleting product", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete product.",
-        variant: "destructive",
-      })
-    }
+  const handleDeleteProduct = (productId: string) => {
+    setProducts((prev) => prev.filter((product) => product._id !== productId))
   }
 
   return (

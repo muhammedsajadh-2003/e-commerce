@@ -1,7 +1,39 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/Button";
+import { toast } from "@/@/hooks/use-toast";
 
 const HomePage: React.FC = () => {
+  const [isProductLoading, setIsProductLoading] = useState(false);
+  const [product, setProduct] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsProductLoading(true);
+      try {
+        const res = await fetch("/api/product/all-products");
+        const data = await res.json();
+
+        console.log(data); // Log the API response
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to fetch products");
+        }
+        setProduct(data.products);  // Ensure `data.products` exists
+      } catch (error) {
+        console.error("Error fetching products", error);
+        toast({
+          title: "Error fetching products",
+          description: "Could not load products, please try again",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProductLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -26,26 +58,33 @@ const HomePage: React.FC = () => {
             Featured Products
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Example Product Cards */}
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div
-                key={index}
-                className="bg-white border rounded-lg shadow-lg hover:shadow-2xl transition-shadow ease-in-out duration-300"
-              >
-                <div className="h-60 bg-gray-300 rounded-md mb-4"></div>
-                <div className="px-4 py-3">
-                  <h3 className="text-xl font-medium text-gray-800 mb-2">
-                    Product {index + 1}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    This is a brief description of the product.
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-200">
-                    Buy Now
-                  </Button>
+            {/* Loop through fetched products */}
+            {isProductLoading ? (
+              <div>Loading...</div>  // Show loading indicator
+            ) : (
+              product.map((product) => (
+                <div
+                  key={product._id}
+                  className="bg-white border rounded-lg shadow-lg hover:shadow-2xl transition-shadow ease-in-out duration-300"
+                >
+                  <div
+                    className="h-60 bg-gray-300 rounded-md mb-4"
+                    style={{ backgroundImage: `url(${product.image})`, backgroundSize: 'cover' }}
+                  ></div>
+                  <div className="px-4 py-3">
+                    <h3 className="text-xl font-medium text-gray-800 mb-2">
+                      {product.title}
+                    </h3>
+                    {/* <p className="text-sm text-gray-600 mb-4">
+                      {product.description}
+                    </p> */}
+                    <Button variant="outline" size="sm" className="w-full py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-200">
+                      Buy Now - ${product.price}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
       </main>
