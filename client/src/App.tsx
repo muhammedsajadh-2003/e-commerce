@@ -11,6 +11,7 @@ import ProductPage from "./pages/Aproduct"
 import AddProductPage from "./pages/AddProduct"
 import PaymentPage from "./pages/Payment"
 import PaymentConfirmationPage from "./pages/AfterPyment"
+import Wishlist from "./pages/Wishlist"
 
 function App() {
 
@@ -29,6 +30,7 @@ function App() {
       <Route path="/addProduct" element={<AddProductPage/>} />
       <Route path="/payment" element={<PaymentPage/>} />
       <Route path="/afterPayment" element={<PaymentConfirmationPage/>} />
+      <Route path="/wishlist" element={<Wishlist/>}  />
     </Routes>
       <Footer/>
     </BrowserRouter>

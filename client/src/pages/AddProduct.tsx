@@ -1,236 +1,181 @@
 'use client'
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+import React, { useState } from 'react'
 import { Button } from "@/@/components/ui/button"
 import { Input } from "@/@/components/ui/input"
 import { Textarea } from "@/@/components/ui/textarea"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/@/components/ui/form"
-
-// Updated schema to match backend requirements
-const formSchema = z.object({
-  title: z.string().min(2, { message: "Product name must be at least 2 characters." }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  price: z.string().refine((val) => !isNaN(Number(val)), { message: "Price must be a valid number." }),
-  size: z.string().min(1, { message: "Size is required" }),
-  color: z.string().min(1, { message: "Color is required" }),
-})
-
-interface Product {
-  _id?: string
-  title: string
-  description: string
-  price: string
-  size: string
-  color: string
-  image?: string
-}
+import { toast } from "@/@/hooks/use-toast"
 
 export default function AddProductPage() {
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([
-    // Mock products data for demo
-    { _id: '1', title: 'Product 1', description: 'Description of product 1', price: '10.00', size: 'M', color: 'Red', image: 'https://via.placeholder.com/150' },
-    { _id: '2', title: 'Product 2', description: 'Description of product 2', price: '20.00', size: 'L', color: 'Blue', image: 'https://via.placeholder.com/150' }
-  ])
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [productTitle, setProductTitle] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [productPrice, setProductPrice] = useState("");
+  const [productSize, setProductSize] = useState("");
+  const [productColor, setProductColor] = useState("");
+  const [productImage, setProductImage] = useState<File | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      price: "",
-      size: "",
-      color: "",
-    },
-  })
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  // Handle form submission (add/update product)
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const newProduct: Product = {
-      ...values,
-      image: imagePreview || "https://via.placeholder.com/150",
+    // Validate all fields
+    if (!productTitle || !productDescription || !productPrice || !productSize || !productColor || !productImage) {
+      toast({
+        title: "Validation Error",
+        description: "Please provide all fields",
+        variant: "destructive"
+      });
+      return;
     }
 
-    if (editingProduct && editingProduct._id) {
-      // Update existing product
-      setProducts((prev) =>
-        prev.map((product) =>
-          product._id === editingProduct._id ? { ...product, ...newProduct } : product
-        )
-      )
-      setEditingProduct(null)
-    } else {
-      // Add new product
-      setProducts((prev) => [...prev, { ...newProduct, _id: String(prev.length + 1) }])
-    }
+    try {
+      setIsLoading(true);
 
-    // Reset form and image preview
-    setImagePreview(null)
-    form.reset()
-  }
-
-  // Handle image upload
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', productTitle);
+      formData.append('description', productDescription);
+      formData.append('price', productPrice);
+      formData.append('size', productSize);
+      formData.append('color', productColor);
+      if (productImage) {
+        formData.append('image', productImage);
       }
-      reader.onerror = () => {
-        console.error("Failed to read the image file.")
+
+      const response = await fetch("/api/product/add-product", {
+        method: "POST",
+        body: formData, // Use FormData instead of JSON for file upload
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add product");
       }
-      reader.readAsDataURL(file)
+
+      const data = await response.json();
+
+      // Update products state
+      setProducts((prevProducts) => [data.newProduct, ...prevProducts]);
+
+      toast({
+        title: "Success",
+        description: "Product added successfully"
+      });
+
+      // Reset form fields
+      setProductTitle("");
+      setProductDescription("");
+      setProductPrice("");
+      setProductSize("");
+      setProductColor("");
+      setProductImage(null);
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add product, please try again",
+        variant: "destructive"
+      });
+
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Prepare product for editing
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product)
-    form.setValue('title', product.title)
-    form.setValue('description', product.description)
-    form.setValue('price', product.price)
-    form.setValue('size', product.size)
-    form.setValue('color', product.color)
-    setImagePreview(product.image || null)
-  }
-
-  // Delete a product
-  const handleDeleteProduct = (productId: string) => {
-    setProducts((prev) => prev.filter((product) => product._id !== productId))
-  }
+  // Handle file input change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProductImage(e.target.files[0]);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center py-10 px-4 min-h-screen bg-gray-100">
       <div className="max-w-lg w-full bg-white shadow-md rounded-lg p-6 mb-10">
         <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          {editingProduct ? 'Edit Product' : 'Add New Product'}
+          Add New Product
         </h1>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium">Product Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter product name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="productName" className="block font-medium mb-2">Product Name</label>
+            <Input 
+              id="productName"
+              placeholder="Enter product name" 
+              value={productTitle}
+              onChange={(e) => setProductTitle(e.target.value)}
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium">Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter product description"
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          </div>
+          <div>
+            <label htmlFor="description" className="block font-medium mb-2">Description</label>
+            <Textarea
+              id="description"
+              placeholder="Enter product description"
+              className="resize-none"
+              value={productDescription}
+              onChange={(e) => setProductDescription(e.target.value)}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-medium">Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Enter price" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="size"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-medium">Size</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter product size" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-medium">Color</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter product color" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="price" className="block font-medium mb-2">Price</label>
+              <Input 
+                id="price"
+                type="number" 
+                placeholder="Enter price"
+                value={productPrice}
+                onChange={(e) => setProductPrice(e.target.value)}
               />
             </div>
-            <FormItem>
-              <FormLabel className="font-medium">Product Image</FormLabel>
-              <FormControl>
-                <Input type="file" accept="image/*" onChange={handleImageUpload} />
-              </FormControl>
-              {imagePreview && (
-                <div className="mt-4">
-                  <img
-                    src={imagePreview}
-                    alt="Product preview"
-                    className="w-full h-auto rounded-lg shadow-sm"
-                  />
-                </div>
-              )}
-            </FormItem>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:opacity-90 py-3 rounded-lg shadow-md"
-            >
-              {editingProduct ? 'Update Product' : 'Add Product'}
-            </Button>
-          </form>
-        </Form>
+            <div>
+              <label htmlFor="size" className="block font-medium mb-2">Size</label>
+              <Input 
+                id="size"
+                placeholder="Enter product size"
+                value={productSize}
+                onChange={(e) => setProductSize(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="color" className="block font-medium mb-2">Color</label>
+              <Input 
+                id="color"
+                placeholder="Enter product color"
+                value={productColor}
+                onChange={(e) => setProductColor(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="image" className="block font-medium mb-2">Product Image</label>
+            <Input 
+              id="image"
+              type="file" 
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:opacity-90 py-3 rounded-lg shadow-md"
+          >
+            {isLoading ? "Adding Product..." : "Add Product"}
+          </Button>
+        </form>
       </div>
       <div className="w-full max-w-5xl">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Product Listings</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div
-              key={product._id}
-              className="bg-white shadow-md rounded-lg p-4 flex flex-col"
-            >
-              <img
-                src={product.image}
-                alt={product.title}
-                className="w-full h-48 object-cover rounded-md mb-4"
-              />
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                {product.title}
-              </h3>
+          {products.map((product, index) => (
+            <div key={index} className="bg-white shadow-md rounded-lg p-4 flex flex-col">
+              {product.image && (
+                <img
+                  src={URL.createObjectURL(product.image)}
+                  alt={product.title}
+                  className="w-full h-48 object-cover rounded-md mb-4"
+                />
+              )}
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.title}</h3>
               <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                 {product.description}
               </p>
@@ -240,22 +185,6 @@ export default function AddProductPage() {
               </div>
               <div className="flex justify-between items-center text-gray-800 mt-2">
                 <span className="text-sm">Color: {product.color}</span>
-              </div>
-              <div className="mt-4 flex justify-between">
-                <Button
-                  onClick={() => handleEditProduct(product)}
-                  variant="outline"
-                  className="text-blue-600"
-                >
-                  Edit
-                </Button>
-                <Button
-                  onClick={() => handleDeleteProduct(product._id!)}
-                  variant="destructive"
-                  className="text-red-600"
-                >
-                  Delete
-                </Button>
               </div>
             </div>
           ))}

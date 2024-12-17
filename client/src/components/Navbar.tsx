@@ -52,6 +52,9 @@ const Navbar: React.FC = () => {
           >
             Products
           </Link>
+          <Link to='/wishlist' >
+          Wishlist
+          </Link>
           <CartDrawer />
           <Link
             to="/dashboard"
@@ -74,7 +77,6 @@ const Navbar: React.FC = () => {
               {/* Show logout message when clicked */}
               {showLogoutMessage && (
                 <div className="absolute right-0 mt-2 bg-white shadow-md p-2 rounded-md">
-                  <span className="text-gray-600">Are you sure you want to logout?</span>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     Logout
                   </Button>
