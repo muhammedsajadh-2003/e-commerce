@@ -1,43 +1,66 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ShoppingCart } from 'lucide-react'
-import { Button } from "../components/ui/Button"
+import React, { useEffect, useState } from "react";
+import { ShoppingCart } from "lucide-react";
+import { Button } from "../components/ui/Button";
 import {
   Drawer,
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "../@/components/ui/drawer"
-import { Link } from "react-router-dom"
+  DrawerFooter
+} from "../@/components/ui/drawer";
+import { Link } from "react-router-dom";
+import { toast } from "@/@/hooks/use-toast";
 
 interface Product {
-  id: string
-  name: string
-  price: number
-  quantity: number
+  id: string;
+  title: string;
+  price: number;
+  quantity: number;
 }
 
-const cartProducts: Product[] = [
-  { id: "1", name: "Product 1", price: 29.99, quantity: 2 },
-  { id: "2", name: "Product 2", price: 19.99, quantity: 1 },
-  { id: "3", name: "Product 3", price: 49.99, quantity: 1 },
-]
-
 export function CartDrawer() {
-  const [isOpen, setIsOpen] = React.useState(false)
-  const totalPrice = cartProducts.reduce(
-    (sum, product) => sum + product.price * product.quantity,
-    0
-  )
+  const [isOpen, setIsOpen] = useState(false);
+  const [isItemsLoading, setIsItemsLoading] = useState(false);
+  const [items, setItems] = useState<Product[]>([]);
 
-  const handleBuyNow = () => {
-    setIsOpen(false) // Close the drawer when the button is clicked
-  }
+  // Fetch cart items on component mount
+  useEffect(() => {
+    const fetchItems = async () => {
+      setIsItemsLoading(true);
+      try {
+        const res = await fetch("/api/user/cart-items");
+        const data = await res.json();
+        console.log("fetched data:", data);
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to fetch cart items");
+        }
+        setItems(data.items || []); // Safeguard against undefined items
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: "Error",
+          description: "Could not fetch cart items. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsItemsLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  // Calculate total price
+  const totalPrice = items.reduce((acc, item) => {
+    const price = item.price || 0;
+    const quantity = item.quantity || 0;
+    return acc + price * quantity;
+  }, 0);
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -55,24 +78,28 @@ export function CartDrawer() {
           </DrawerHeader>
           <div className="p-4 pb-0">
             <div className="mt-4">
-              <ul className="space-y-4">
-                {cartProducts.length === 0 ? (
-                  <p className="text-center text-gray-600">Your cart is empty.</p>
-                ) : (
-                  cartProducts.map((product) => (
+              {isItemsLoading ? (
+                <p className="text-center text-gray-600">Loading...</p>
+              ) : items.length === 0 ? (
+                <p className="text-center text-gray-600">Your cart is empty.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {items.map((product) => (
                     <li key={product.id} className="flex justify-between items-center p-4 border-b">
                       <div>
-                        <h3 className="text-lg font-medium">{product.name}</h3>
+                        <h3 className="text-lg font-medium">{product.title}</h3>
                         <p className="text-sm text-gray-600">Quantity: {product.quantity}</p>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-lg font-semibold">${product.price.toFixed(2)}</span>
+                        <span className="text-lg font-semibold">
+                          ${product.price ? product.price.toFixed(2) : "0.00"}
+                        </span>
                         <span className="text-sm text-gray-500">x{product.quantity}</span>
                       </div>
                     </li>
-                  ))
-                )}
-              </ul>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="mt-4 flex justify-between items-center text-lg font-semibold">
@@ -82,9 +109,9 @@ export function CartDrawer() {
           </div>
 
           <DrawerFooter>
-            <Button onClick={handleBuyNow}>
-              <Link to='/payment'>Buy Now</Link>
-            </Button>
+            <Link to="/payment">
+              <Button>Buy Now</Button>
+            </Link>
             <DrawerClose asChild>
               <Button variant="outline">Close</Button>
             </DrawerClose>
@@ -92,5 +119,5 @@ export function CartDrawer() {
         </div>
       </DrawerContent>
     </Drawer>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 import express from "express";
-import authRoutes from "./routes/authRoutes.js";
-import ProductRoutes from './routes/productRoutes.js'
+import authRoutes from "./routes/auth.routes.js";
+import userRoutes from './routes/user.routes.js'
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
@@ -28,5 +28,5 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
-app.use('/api/product', ProductRoutes);
+app.use('/api/user', userRoutes);
 

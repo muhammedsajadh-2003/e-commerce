@@ -1,6 +1,6 @@
 
 import express from "express";
-import { signIn, signUp } from "../controllers/authController.js";
+import { signIn, signUp } from "../controllers/auth.controller.js";
 
 
 const app = express();

@@ -1,6 +1,7 @@
-import User from "../models/user.js";
+import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import Cart from "../models/cart.model.js";
 
 const generateToken = (userId,) => {
   return jwt.sign({ id: userId}, process.env.JWT_SECRET, {
@@ -51,17 +52,31 @@ export const signUp = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({
+    // await User.create({
+    //   firstName,
+    //   lastName,
+    //   email,
+    //   password: hashedPassword,
+    // });
+
+    const newUser = new User({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-    });
+    })
+
+    await newUser.save();
+
+    await Cart.create({
+      userId: newUser._id,
+      items:[],
+    })
 
     res.status(201).json({ success: true, message: "sign up success" });
   } catch (error) {
     console.error("signUp Error:", error);
-    res.status(500).json({ success: false, message: "internal Server Error" });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

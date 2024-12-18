@@ -4,77 +4,68 @@ import { Menu, MenuItem } from "./ui/Menu";
 import { Link, useNavigate } from "react-router-dom";
 import { CartDrawer } from "../pages/Cart";
 import { Icon } from "@/@/components/ui/Icon";
+import { FaHome, FaBox, FaUserAlt, FaSignInAlt } from "react-icons/fa"; // Import icons
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLogoutMessage, setShowLogoutMessage] = useState(false); // New state for logout message visibility
+  const [showLogoutMessage, setShowLogoutMessage] = useState(false);
   const navigate = useNavigate();
 
-  // Check if the user is logged in by checking the token in localStorage
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token); // Set the login state based on the presence of a token
+    setIsLoggedIn(!!token);
   }, []);
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
-    setShowLogoutMessage(false); // Hide the logout message after logout
+    setShowLogoutMessage(false);
     navigate("/login");
   };
 
-  // Handle clicking the user icon
   const handleProfileClick = () => {
-    setShowLogoutMessage((prev) => !prev); // Toggle visibility of logout message
+    setShowLogoutMessage((prev) => !prev);
   };
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 flex justify-between items-center h-16">
-        {/* Logo */}
         <Link to="/" className="text-2xl font-bold text-gray-800">
           MyStore
         </Link>
 
-        {/* Desktop Links */}
         <div className="hidden md:flex space-x-6">
           <Link
             to="/"
-            className="text-gray-600 hover:text-gray-800 transition-colors"
+            className="text-gray-600 hover:text-gray-800 transition-colors flex items-center space-x-2"
           >
-            Home
+            <FaHome /> <span>Home</span>
           </Link>
           <Link
             to="/products"
-            className="text-gray-600 hover:text-gray-800 transition-colors"
+            className="text-gray-600 hover:text-gray-800 transition-colors flex items-center space-x-2"
           >
-            Products
-          </Link>
-          <Link to='/wishlist' >
-          Wishlist
+            <FaBox /> <span>Products</span>
           </Link>
           <CartDrawer />
           <Link
             to="/dashboard"
-            className="text-gray-600 hover:text-gray-800 transition-colors"
+            className="text-gray-600 hover:text-gray-800 transition-colors flex items-center space-x-2"
           >
-            Dashboard
+            <FaUserAlt /> <span>Dashboard</span>
           </Link>
 
-          {/* Conditional Rendering of Login or Profile Icon */}
           {isLoggedIn ? (
             <div className="relative">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleProfileClick} // Toggle the message on click
+                onClick={handleProfileClick}
               >
                 <Icon name="user" className="text-gray-800 text-xl" />
               </Button>
 
-              {/* Show logout message when clicked */}
               {showLogoutMessage && (
                 <div className="absolute right-0 mt-2 bg-white shadow-md p-2 rounded-md">
                   <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -85,12 +76,13 @@ const Navbar: React.FC = () => {
             </div>
           ) : (
             <Button variant="outline" size="sm">
-              <Link to="/login">Login</Link>
+              <Link to="/login" className="flex items-center space-x-2">
+                <FaSignInAlt /> <span>Login</span>
+              </Link>
             </Button>
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <div className="md:hidden">
           <Button
             variant="ghost"
@@ -115,26 +107,25 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-md absolute top-16 left-0 w-full z-40">
           <Menu className="flex flex-col space-y-2 p-4">
             <MenuItem>
               <Link
                 to="/"
-                className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center space-x-2"
                 onClick={() => setMenuOpen(false)}
               >
-                Home
+                <FaHome /> <span>Home</span>
               </Link>
             </MenuItem>
             <MenuItem>
               <Link
                 to="/products"
-                className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center space-x-2"
                 onClick={() => setMenuOpen(false)}
               >
-                Products
+                <FaBox /> <span>Products</span>
               </Link>
             </MenuItem>
             <MenuItem>
@@ -145,10 +136,10 @@ const Navbar: React.FC = () => {
             <MenuItem>
               <Link
                 to="/dashboard"
-                className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md flex items-center space-x-2"
                 onClick={() => setMenuOpen(false)}
               >
-                Dashboard
+                <FaUserAlt /> <span>Dashboard</span>
               </Link>
             </MenuItem>
             <MenuItem>
@@ -169,7 +160,9 @@ const Navbar: React.FC = () => {
                   className="w-full"
                   onClick={() => setMenuOpen(false)}
                 >
-                  <Link to="/login">Login</Link>
+                  <Link to="/login" className="flex items-center space-x-2">
+                    <FaSignInAlt /> <span>Login</span>
+                  </Link>
                 </Button>
               )}
             </MenuItem>

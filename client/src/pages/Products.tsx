@@ -1,26 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Star, ChevronDown, Search, ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
-// Mock data for products
-const products = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  name: `Product ${i + 1}`,
-  price: Math.floor(Math.random() * 100) + 20,
-  rating: (Math.random() * 2 + 3).toFixed(1),
-  reviews: Math.floor(Math.random() * 500),
-  image: `/placeholder.svg?height=200&width=200&text=Product+${i + 1}`,
-  isNew: Math.random() > 0.8,
-  onSale: Math.random() > 0.7,
-}))
 
 export default function ProductListing() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [sortBy, setSortBy] = useState('popularity')
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/user/all-products') // Replace with your API endpoint
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch products')
+        }
+
+        setProducts(data.products)
+        setLoading(false)
+      } catch (err) {
+        console.error('Error fetching products:', err)
+        setError(err.message)
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [])
 
   const toggleFilter = () => setIsFilterOpen(!isFilterOpen)
+
+  const addToCart = async (productId, quantity = 1) => {
+    try {
+      const response = await fetch('/api/user/add-cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Assuming you're using a JWT token
+        },
+        body: JSON.stringify({ productId, quantity }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add to cart')
+      }
+
+      alert('Product added to cart successfully!')
+    } catch (err) {
+      console.error('Error adding to cart:', err)
+      alert(err.message || 'Something went wrong')
+    }
+  }
 
   const sortedProducts = [...products].sort((a, b) => {
     switch (sortBy) {
@@ -29,11 +66,23 @@ export default function ProductListing() {
       case 'price-high':
         return b.price - a.price
       case 'rating':
-        return parseFloat(b.rating) - parseFloat(a.rating)
+        return parseFloat(b.rating || 0) - parseFloat(a.rating || 0)
       default:
         return 0
     }
   })
+
+  if (loading) {
+    return <div className="min-h-screen flex justify-center items-center">Loading products...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex justify-center items-center text-red-500">
+        {error}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -58,7 +107,7 @@ export default function ProductListing() {
         <nav className="text-sm mb-4">
           <ol className="list-none p-0 inline-flex">
             <li className="flex items-center">
-              <a href="#" className="text-gray-600 hover:text-blue-500">Home</a>
+              <a href="/" className="text-gray-600 hover:text-blue-500">Home</a>
               <ChevronDown className="h-4 w-4 mx-2 transform rotate-270 text-gray-400" />
             </li>
             <li className="flex items-center">
@@ -102,66 +151,30 @@ export default function ProductListing() {
             {/* Product Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {sortedProducts.map((product) => (
-                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
+                <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
                   <div className="relative">
-                    <Link to='/aproduct'>
+                    <Link to={`/aproduct/${product._id}`}>
                       <img
-                        src={product.image}
-                        alt={product.name}
-                        width={200}
-                        height={200}
+                        src={product.images[0]} // Assuming the first image is used
+                        alt={product.title}
                         className="object-cover w-full h-48"
                       />
                     </Link>
-                    {product.isNew && (
-                      <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">New</span>
-                    )}
-                    {product.onSale && (
-                      <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Sale</span>
-                    )}
-                    <button className="absolute bottom-2 right-2 bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded shadow hover:bg-gray-100">
-                      <Link to='/aproduct'>Quick View</Link>
-                    </button>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
+                    <h3 className="font-semibold text-lg mb-1">{product.title}</h3>
                     <div className="flex items-center mb-2">
-                      <span className="text-yellow-400 flex">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <Star
-                            key={index}
-                            className={`h-4 w-4 ${
-                              index < Math.floor(parseFloat(product.rating))
-                                ? 'fill-current'
-                                : 'stroke-current'
-                            }`}
-                          />
-                        ))}
-                      </span>
-                      <span className="text-gray-600 text-sm ml-1">({product.reviews})</span>
-                    </div>
-                    <div className="flex justify-between items-center">
                       <span className="font-bold text-lg">${product.price.toFixed(2)}</span>
-                      <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors">
-                        Add to Cart
-                      </button>
                     </div>
+                    <button
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+                      onClick={() => addToCart(product._id, 1)} // Quantity set to 1 for simplicity
+                    >
+                      Add to Cart
+                    </button>
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="mt-8 flex justify-center">
-              <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-l hover:bg-gray-300">
-                Previous
-              </button>
-              <button className="bg-blue-500 text-white px-4 py-2 hover:bg-blue-600">1</button>
-              <button className="bg-gray-200 text-gray-700 px-4 py-2 hover:bg-gray-300">2</button>
-              <button className="bg-gray-200 text-gray-700 px-4 py-2 hover:bg-gray-300">3</button>
-              <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-r hover:bg-gray-300">
-                Next
-              </button>
             </div>
           </main>
         </div>

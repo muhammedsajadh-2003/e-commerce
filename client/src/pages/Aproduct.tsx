@@ -1,43 +1,43 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Star, ShoppingCart, Heart, ZoomIn } from 'lucide-react'
 import { Button } from '../@/components/ui/button'
 import { Card, CardContent } from '../@/components/ui/card'
 import { Badge } from '../@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../@/components/ui/tabs'
 
-const product = {
-  name: 'Premium Wireless Headphones',
-  price: 299.99,
-  discount: 50,
-  rating: 4.8,
-  reviews: 1024,
-  description: 'Experience crystal-clear audio with our premium wireless headphones. Featuring advanced noise-cancellation technology and long-lasting battery life.',
-  features: [
-    'Active Noise Cancellation',
-    '40-hour battery life',
-    'Comfortable over-ear design',
-    'Bluetooth 5.0 connectivity',
-  ],
-  colors: ['Black', 'White', 'Rose Gold'],
-  images: [
-    '/placeholder.svg?height=400&width=400',
-    '/placeholder.svg?height=400&width=400',
-    '/placeholder.svg?height=400&width=400',
-  ],
-}
-
-const relatedProducts = [
-  { name: 'Wireless Earbuds', price: 129.99, image: '/placeholder.svg?height=200&width=200' },
-  { name: 'Bluetooth Speaker', price: 79.99, image: '/placeholder.svg?height=200&width=200' },
-  { name: 'Noise-Cancelling Headphones', price: 249.99, image: '/placeholder.svg?height=200&width=200' },
-]
-
-export default function ProductPage() {
-  const [selectedColor, setSelectedColor] = useState(product.colors[0])
+export default function ProductPage({ productId }: { productId: string }) {
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string>('Black')
   const [quantity, setQuantity] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/user/get-product/${productId}`)
+        console.log('Product Id : ',productId)
+        if (!response.ok) {
+          throw new Error('Product not found')
+        }
+        const data = await response.json()
+        setProduct(data.product)
+      } catch (error) {
+        setError('Failed to fetch product')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [productId])
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>{error}</div>
+  if (!product) return <div>Product not found</div>
 
   return (
     <div className="container mx-auto px-6 py-12">
@@ -60,7 +60,7 @@ export default function ProductPage() {
             </Button>
           </div>
           <div className="flex space-x-4">
-            {product.images.map((img, index) => (
+            {product.images.map((img: string, index: number) => (
               <button
                 key={index}
                 className={`relative w-20 h-20 rounded-md overflow-hidden transition-all duration-200 ${index === activeImage ? 'ring-2 ring-primary' : ''}`}
@@ -101,7 +101,7 @@ export default function ProductPage() {
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Color</h3>
             <div className="flex space-x-2">
-              {product.colors.map((color) => (
+              {product.colors.map((color: string) => (
                 <button
                   key={color}
                   className={`w-8 h-8 rounded-full ${color === selectedColor ? 'ring-2 ring-primary' : ''}`}
@@ -143,7 +143,7 @@ export default function ProductPage() {
             </TabsList>
             <TabsContent value="features">
               <ul className="list-disc pl-5 space-y-1 text-gray-600">
-                {product.features.map((feature, index) => (
+                {product.features.map((feature: string, index: number) => (
                   <li key={index}>{feature}</li>
                 ))}
               </ul>
@@ -171,12 +171,6 @@ export default function ProductPage() {
             </Card>
           ))}
         </div>
-      </div>
-
-      {/* Customer Reviews */}
-      <div className="mt-16">
-        <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
-        {/* Add customer review components here */}
       </div>
     </div>
   )

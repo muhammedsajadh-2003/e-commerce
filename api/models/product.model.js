@@ -1,4 +1,3 @@
-// models/Product.js
 import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema(
@@ -8,11 +7,12 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     size: { type: String, required: true },
     color: { type: String, required: true },
-    image: { type: String, required: true }, // URL or path to the image
+    images: [{ type: String, required: true }], // Array of URLs or paths to images
   },
   { timestamps: true }
 );
 
-const Product = mongoose.model("Product", productSchema);
+// Check if the model already exists to avoid OverwriteModelError
+const Product = mongoose.models.Product || mongoose.model("Product", productSchema);
 
 export default Product;

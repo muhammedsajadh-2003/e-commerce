@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { toast } from "@/@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 const HomePage: React.FC = () => {
   const [isProductLoading, setIsProductLoading] = useState(false);
@@ -10,7 +11,7 @@ const HomePage: React.FC = () => {
     const fetchProducts = async () => {
       setIsProductLoading(true);
       try {
-        const res = await fetch("/api/product/all-products");
+        const res = await fetch("/api/user/all-products");
         const data = await res.json();
 
         console.log(data); // Log the API response
@@ -57,6 +58,7 @@ const HomePage: React.FC = () => {
           <h2 className="text-3xl font-semibold text-gray-800 mb-6">
             Featured Products
           </h2>
+          <Link to={`/aproduct/${product._id}`} >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Loop through fetched products */}
             {isProductLoading ? (
@@ -70,7 +72,9 @@ const HomePage: React.FC = () => {
                   <div
                     className="h-60 bg-gray-300 rounded-md mb-4"
                     style={{ backgroundImage: `url(${product.image})`, backgroundSize: 'cover' }}
-                  ></div>
+                  >
+
+                  </div>
                   <div className="px-4 py-3">
                     <h3 className="text-xl font-medium text-gray-800 mb-2">
                       {product.title}
@@ -78,6 +82,7 @@ const HomePage: React.FC = () => {
                     {/* <p className="text-sm text-gray-600 mb-4">
                       {product.description}
                     </p> */}
+                    
                     <Button variant="outline" size="sm" className="w-full py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-200">
                       Buy Now - ${product.price}
                     </Button>
@@ -86,6 +91,8 @@ const HomePage: React.FC = () => {
               ))
             )}
           </div>
+          </Link>
+
         </section>
       </main>
 
